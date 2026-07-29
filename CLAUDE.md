@@ -32,6 +32,20 @@ Node.js APM 에이전트. **Step 0 완료** — Java/Go/Python APM과 동일한 
 - **`http.get`은 `http.request`와 별도로 패치해야 함** — Node 내부에서 `get`이 모듈 로컬 참조로 `request`를 호출하므로, `module.exports.request`만 덮어써도 `get` 경로는 원본을 그대로 씀. 이미 둘 다 패치되어 있음(`patchOutboundHttp`)
 - **Prisma 계측은 `$extends` 가정** — 실제 sarc 코드가 구버전 `$use` 미들웨어를 쓰면 어댑터 추가 필요. sarc 코드 접근이 안 돼서(이 세션 진행 당시) 범용 가정으로 구현함
 
+## 로컬 스모크테스트
+
+README는 최종 사용자용이라 이 내용을 안 담았다. 개발 중 wire format/계측 지점 확인용:
+
+```bash
+node testapp/fake-collector.js          # 터미널 1 — macmon-server :6600 흉내, 받은 JSON을 그대로 출력
+MACMON_APM_URL=http://127.0.0.1:6600 node testapp/server.js   # 터미널 2 — :3100
+curl localhost:3100/hello
+curl localhost:3100/slow       # 300ms 응답 — duration 측정 확인용
+curl localhost:3100/outbound   # 자기 자신을 fetch로 호출 — outbound 스팬 + parent_trace_id 전파 확인용
+curl localhost:3100/error      # uncaught 예외 — exception_type/msg 캡처 확인용
+curl localhost:3100/stats      # exporter sent/failed/dropped/queued 카운터
+```
+
 ## 다음 단계 (Step 1)
 
 1. **서버 측 `node_*` 필드 분리** — `macmon-server/internal/storage/apm_runtime.go`의 `APMRuntimeSample`에 전용 필드 추가, UI 분기는 `lang="node"`로
