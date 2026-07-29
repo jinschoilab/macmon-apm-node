@@ -31,6 +31,19 @@ function genSpanId() {
   return crypto.randomBytes(8).toString('hex');
 }
 
+function getClientIp(req) {
+  // X-Forwarded-For 우선 (nginx/로드밸런서 뒤에 있는 흔한 배포 형태 — sarc도 해당 가능성 높음).
+  // 프록시가 이 헤더를 검증/재작성하지 않으면 클라이언트가 임의로 스푸핑할 수 있음(알려진 한계).
+  const xff = req.headers && req.headers['x-forwarded-for'];
+  if (xff) {
+    const first = String(xff).split(',')[0].trim();
+    if (first) return first;
+  }
+  const xri = req.headers && req.headers['x-real-ip'];
+  if (xri) return String(xri).trim();
+  return (req.socket && req.socket.remoteAddress) || '';
+}
+
 function safePath(rawUrl) {
   try {
     return new URL(rawUrl, 'http://localhost').pathname;
@@ -85,6 +98,7 @@ function handleRequest(cfg, exporter, origEmit, server, req, res, emitArgs) {
     kind: 'server',
     httpMethod: req.method || '',
     httpPath: path,
+    clientIp: getClientIp(req),
   });
   trace.root = root;
 

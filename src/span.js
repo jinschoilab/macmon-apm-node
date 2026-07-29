@@ -44,6 +44,8 @@ class TraceSpan {
     this.sql = opts.sql || '';
     this.rowCount = opts.rowCount || 0;
 
+    this.clientIp = opts.clientIp || '';
+
     this.exceptionType = opts.exceptionType || '';
     this.exceptionMsg = opts.exceptionMsg || '';
   }
@@ -65,6 +67,7 @@ class TraceSpan {
     if (this.httpPath) d.http_path = this.httpPath;
     if (this.httpStatus) d.http_status = this.httpStatus;
     if (this.httpUrl) d.http_url = this.httpUrl;
+    if (this.clientIp) d.client_ip = this.clientIp;
     if (this.sql) d.sql = this.sql;
     if (this.rowCount) d.row_count = this.rowCount;
     if (this.exceptionType) d.exception_type = this.exceptionType;
