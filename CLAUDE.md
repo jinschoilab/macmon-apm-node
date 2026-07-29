@@ -18,7 +18,7 @@ Node.js APM 에이전트. **Step 0 완료** — Java/Go/Python APM과 동일한 
 - `src/span.js` — `Trace`/`TraceSpan` + `nowNs()`(`process.hrtime.bigint()` 기반, BOOT_NS 대비 상대값)
 - `src/exporter.js` — bounded queue + async pump 루프 + `beforeExit` flush
 - `src/context.js` — `AsyncLocalStorage` 래퍼 (`run`/`getStore`)
-- `src/http.js` — inbound(`http`/`https` Server.emit 패치) + outbound(`request`/`get`/전역 `fetch` 패치) + traceparent 파싱/주입
+- `src/http.js` — inbound(`http`/`https` Server.emit 패치) + outbound(`request`/`get`/전역 `fetch` 패치) + traceparent 파싱/주입 + `client_ip`(X-Forwarded-For→X-Real-IP→socket.remoteAddress 순)
 - `src/prisma.js` — `instrumentPrisma()`, Prisma **Client Extension API**(`$extends`) 기반. 구버전 `$use` 미들웨어(Prisma 4.x)는 미지원
 - `src/runtime.js` — 30초 주기. `jvm_heap_used_kb`/`jvm_heap_max_kb`/`jvm_gc_count`를 Java 필드명 그대로 재사용(서버 UI 호환, Python과 동일한 Step 0 편법)
 - `testapp/` — 순수 Node http 데모(`server.js`) + macmon-server 흉내 로컬 수집기(`fake-collector.js`). 프레임워크 없이 raw http만 써서 계측 지점을 검증하는 용도
@@ -57,3 +57,5 @@ curl localhost:3100/stats      # exporter sent/failed/dropped/queued 카운터
 ## 서버 측 변경 이력
 
 - `macmon-server/internal/storage/traces.go`: `Trace.Lang()`에 `Comm == "node"` → `"node"` 분기 추가 (이전엔 `go`로 오분류됨). 다른 곳(`traces_query.go` 등)은 전부 `t.Lang() == lang` 문자열 비교라 추가 수정 불필요
+- `macmon-server/internal/storage/traces.go`: `TraceSpan`에 `ClientIP string json:"client_ip,omitempty"` 필드 추가 (2026-07-29). `GET /api/traces/{id}`가 구조체를 필터링 없이 그대로 내려주므로 서버 쪽엔 이 필드 추가만 있으면 됨
+- `macmon-ui/src/pages/TraceDetail.jsx`: `flatten()`에 `clientIp: node.client_ip` 추가 + 워터폴 행에 `🌐 {ip}` 표시. **다른 언어 에이전트(Java/Go/Python)는 아직 client_ip를 안 보냄** — 필드 자체는 범용이라 나중에 각 에이전트에 동일하게 추가 가능
