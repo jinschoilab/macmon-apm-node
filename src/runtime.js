@@ -40,6 +40,7 @@ function sample(cfg) {
   return {
     wall_at: wallNowISO(),
     host: cfg.host,
+    agent_id: cfg.agentId,
     service: cfg.service,
     lang: 'node',
     jvm_heap_used_kb: Math.round(mem.heapUsed / 1024),

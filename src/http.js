@@ -90,7 +90,13 @@ function handleRequest(cfg, exporter, origEmit, server, req, res, emitArgs) {
   const traceId = genTraceId();
   const parentTraceId = parseParentTraceId(req.headers && req.headers['traceparent']);
 
-  const trace = new Trace({ id: newTraceId(), host: cfg.host, service: cfg.service, comm: 'node' });
+  const trace = new Trace({
+    id: newTraceId(),
+    host: cfg.host,
+    agentId: cfg.agentId,
+    service: cfg.service,
+    comm: 'node',
+  });
   trace.traceId = traceId;
   trace.parentTraceId = parentTraceId;
 

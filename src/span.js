@@ -81,6 +81,7 @@ class Trace {
     opts = opts || {};
     this.id = opts.id;
     this.host = opts.host;
+    this.agentId = opts.agentId || '';
     this.pid = opts.pid != null ? opts.pid : process.pid;
     this.comm = opts.comm || 'node';
     this.service = opts.service || '';
@@ -106,6 +107,7 @@ class Trace {
       id: this.id,
       host: this.host,
       pid: this.pid,
+      agent_id: this.agentId,
       comm: this.comm,
       wall_at: this.wallAt,
       start_ns: toSafeNumber(this.startNs),
