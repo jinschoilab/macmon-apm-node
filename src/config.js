@@ -8,6 +8,9 @@
  *                          .macmon-agent.id 파일에서 읽거나 생성(파일 위치 공유 시 자동 통일)
  * - MACMON_APM_DISABLE   : "1"이면 모든 전송 비활성 (테스트용)
  * - MACMON_APM_RUNTIME_INTERVAL_SEC : 런타임 샘플 주기 (기본 30)
+ * - MACMON_APM_SAMPLE_RATE : 0~100 정수, 헤드 샘플링 비율 (기본 100 = 전량).
+ *                            Java APM(macmon.sample.rate)과 동일한 개념 — 100 미만이면
+ *                            일부 요청은 Trace 객체 자체를 만들지 않고 그대로 통과시킨다.
  */
 const os = require('os');
 const path = require('path');
@@ -105,6 +108,10 @@ class Config {
     this.runtimeIntervalSec = Number(
       overrides.runtimeIntervalSec || process.env.MACMON_APM_RUNTIME_INTERVAL_SEC || 30
     );
+    const rawSampleRate = Number(
+      overrides.sampleRate != null ? overrides.sampleRate : process.env.MACMON_APM_SAMPLE_RATE
+    );
+    this.sampleRate = Number.isFinite(rawSampleRate) ? Math.min(100, Math.max(0, rawSampleRate)) : 100;
   }
 
   get traceEndpoint() {

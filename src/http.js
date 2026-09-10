@@ -86,6 +86,12 @@ function patchInboundServer(cfg, exporter) {
 }
 
 function handleRequest(cfg, exporter, origEmit, server, req, res, emitArgs) {
+  // 헤드 샘플링: 이 요청을 아예 추적하지 않기로 했으면 Trace/Span을 만들지 않고
+  // 원본 그대로 통과시킨다 — 컨텍스트가 없으니 outbound 패치도 자동으로 no-op.
+  if (cfg.sampleRate < 100 && Math.random() * 100 >= cfg.sampleRate) {
+    return origEmit.apply(server, ['request', ...emitArgs]);
+  }
+
   const path = safePath(req.url);
   const traceId = genTraceId();
   const parentTraceId = parseParentTraceId(req.headers && req.headers['traceparent']);

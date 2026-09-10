@@ -8,10 +8,15 @@
  * - 실패한 요청은 재시도하지 않는다.
  * - Node는 데몬 스레드가 없으므로 'beforeExit'에서 잔여 큐를 짧게 flush한다
  *   (완벽하지 않음 — 강제 종료/크래시 시엔 유실될 수 있음).
+ * - pump는 워커 N개를 동시에 돌린다 — 순차 처리(1건씩 await)면 POST 왕복 지연이
+ *   그대로 처리량 상한이 되어 트래픽이 조금만 몰려도 큐가 차서 드롭이 발생하기
+ *   때문. 서버가 배치 수신을 지원하지 않으므로(1req=1트랜잭션) 요청 자체를
+ *   합치는 대신 여러 요청을 동시에 진행시켜 지연시간을 숨긴다.
  */
 
 const MAX_QUEUE = 1024;
 const POST_TIMEOUT_MS = 5000;
+const PUMP_WORKERS = 8;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -28,7 +33,10 @@ class Exporter {
 
     if (cfg.disabled) return;
 
-    this._pumpPromise = this._pump();
+    this._pumpPromises = [];
+    for (let i = 0; i < PUMP_WORKERS; i++) {
+      this._pumpPromises.push(this._pump());
+    }
     this._exitHandler = () => this._onExit();
     process.on('beforeExit', this._exitHandler);
   }
