@@ -80,9 +80,11 @@ class Exporter {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.cfg && this.cfg.apiKey) headers['X-API-Key'] = this.cfg.apiKey;
       await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body,
         signal: controller.signal,
       });

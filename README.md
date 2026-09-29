@@ -64,6 +64,7 @@ export const prisma = instrumentPrisma(new PrismaClient());
 
 ```bash
 MACMON_APM_URL=http://내부서버IP:6600
+- `MACMON_APM_KEY` : 테넌트/팀 API 키(`mak_…`). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
 ```
 
 이것만 설정하면 끝입니다. 나머지 옵션은 기본값으로 충분합니다.

@@ -2,6 +2,7 @@
 /**
  * 환경변수 기반 설정. Java/Go/Python APM과 동일한 키 컨벤션:
  * - MACMON_APM_URL       : macmon-server 수집 포트 (기본 http://127.0.0.1:6600)
+ * - MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다
  * - MACMON_APM_SERVICE   : 서비스명. 미지정 시 package.json name 또는 "node"
  * - MACMON_APM_HOST      : 호스트 식별자. 미지정 시 os.hostname()
  * - MACMON_APM_AGENT_ID  : agent_id. 미지정 시 macmon-agent(Go)와 동일한 방식으로
@@ -101,6 +102,8 @@ class Config {
   constructor(overrides) {
     overrides = overrides || {};
     this.url = overrides.url || process.env.MACMON_APM_URL || 'http://127.0.0.1:6600';
+    // 테넌트/팀 API 키(mak_…). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
+    this.apiKey = overrides.apiKey || process.env.MACMON_APM_KEY || '';
     this.service = overrides.service || process.env.MACMON_APM_SERVICE || defaultService();
     this.host = overrides.host || process.env.MACMON_APM_HOST || defaultHost();
     this.agentId = overrides.agentId || process.env.MACMON_APM_AGENT_ID || defaultAgentId();
