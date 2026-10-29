@@ -2,8 +2,10 @@
 /**
  * 환경변수 기반 설정. Java/Go/Python APM과 동일한 키 컨벤션:
  * - MACMON_APM_URL       : macmon-server 수집 포트 (기본 http://127.0.0.1:6600)
- * - MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다.
- *                          없으면 macmon-agent.conf($MACMON_HOME → 엔트리포인트 옆 → ~/.macmon-agent.conf)의 api_key
+ * - MACMON_PROJECT_ACCESS_KEY : 프로젝트 액세스 키(mpk_…). 서버가 이 키로 프로젝트(pcode)·테넌트를 판독한다.
+ * - MACMON_APM_KEY       : 위가 없을 때. 레거시 테넌트/팀 키(mak_/mtk_)도 받는다.
+ *                          둘 다 없으면 macmon-agent.conf($MACMON_HOME → 엔트리포인트 옆 → ~/.macmon-agent.conf)의
+ *                          apm.project_access_key → project_access_key → team.key/api_key
  * - MACMON_HOME          : macmon-agent 설치 디렉토리. conf(api_key)와 .macmon-agent.id를 여기서 먼저 찾는다
  * - MACMON_APM_SERVICE   : 서비스명. 미지정 시 package.json name 또는 "node"
  * - MACMON_APM_HOST      : 호스트 식별자. 미지정 시 os.hostname()
@@ -90,6 +92,7 @@ function confApiKey() {
     // fall through
   }
   for (const p of paths) {
+    const found = {};
     try {
       for (const raw of fs.readFileSync(p, 'utf8').split('\n')) {
         const line = raw.trim();
@@ -97,10 +100,14 @@ function confApiKey() {
         if (!line || line.startsWith('#') || i < 0) continue;
         const k = line.slice(0, i).trim();
         const v = line.slice(i + 1).trim();
-        if ((k === 'team.key' || k === 'api_key') && v) return v;
+        if (v && !(k in found)) found[k] = v;
       }
     } catch {
       // 파일 없음/권한 없음 — 다음 후보
+    }
+    // APM 전용 프로젝트 키 → 호스트와 같은 프로젝트 키 → 레거시 키
+    for (const k of ['apm.project_access_key', 'project_access_key', 'team.key', 'api_key']) {
+      if (found[k]) return found[k];
     }
   }
   return '';
@@ -141,8 +148,13 @@ class Config {
   constructor(overrides) {
     overrides = overrides || {};
     this.url = overrides.url || process.env.MACMON_APM_URL || 'http://127.0.0.1:6600';
-    // 테넌트/팀 API 키(mak_…). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
-    this.apiKey = overrides.apiKey || process.env.MACMON_APM_KEY || confApiKey();
+    // 프로젝트 액세스 키(mpk_…, 레거시 mak_/mtk_도 허용). 서버가 이 키로 프로젝트·테넌트를 판독한다. 없으면 default 테넌트
+    this.apiKey =
+      overrides.projectAccessKey ||
+      overrides.apiKey ||
+      process.env.MACMON_PROJECT_ACCESS_KEY ||
+      process.env.MACMON_APM_KEY ||
+      confApiKey();
     this.service = overrides.service || process.env.MACMON_APM_SERVICE || defaultService();
     this.host = overrides.host || process.env.MACMON_APM_HOST || defaultHost();
     this.agentId = overrides.agentId || process.env.MACMON_APM_AGENT_ID || defaultAgentId();
